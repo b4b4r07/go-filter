@@ -2,7 +2,6 @@ package filter
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/b4b4r07/go-colon"
+	"github.com/pkg/errors"
 )
 
 var Command = "fzf --multi:peco:fzy"
@@ -38,13 +38,17 @@ func Run(text string) (selectedLines []string, err error) {
 
 func runFilter(command string, r io.Reader, w io.Writer) error {
 	command = os.Expand(command, os.Getenv)
-	result, err := colon.Parse(command)
+	results, err := colon.Parse(command)
 	if err != nil {
 		return err
 	}
-	command = strings.Join(result.Executable().One().Attr.Args, " ")
+	result, err := results.Executable().First()
+	if err != nil {
+		return errors.Wrap(err, "available command should be specified")
+	}
+	command = result.Item
 	if command == "" {
-		return errors.New("invalid command")
+		return errors.New("command not specified")
 	}
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
