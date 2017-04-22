@@ -14,6 +14,10 @@ import (
 
 var Command = "fzf --multi:peco:fzy"
 
+type Filter interface {
+	Run(string) ([]string, error)
+}
+
 func Run(text string) (selectedLines []string, err error) {
 	if text == "" {
 		return selectedLines, errors.New("no input")
