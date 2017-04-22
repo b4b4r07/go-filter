@@ -14,24 +14,19 @@ import (
 
 var Command = "fzf --multi:peco:fzy"
 
-func Run(text string) ([]string, error) {
-	var (
-		lines         []string
-		selectedLines []string
-		buf           bytes.Buffer
-		err           error
-	)
+func Run(text string) (selectedLines []string, err error) {
 	if text == "" {
-		return lines, errors.New("no input")
+		return selectedLines, errors.New("no input")
 	}
+	var buf bytes.Buffer
 	err = runFilter(Command, strings.NewReader(text), &buf)
 	if err != nil {
-		return lines, err
+		return selectedLines, err
 	}
 	if buf.Len() == 0 {
-		return lines, errors.New("no lines selected")
+		return selectedLines, errors.New("no lines selected")
 	}
-	lines = strings.Split(buf.String(), "\n")
+	lines := strings.Split(buf.String(), "\n")
 	for _, line := range lines {
 		if line == "" {
 			continue
@@ -42,15 +37,15 @@ func Run(text string) ([]string, error) {
 }
 
 func runFilter(command string, r io.Reader, w io.Writer) error {
-	if command == "" {
-		return errors.New("invalid argument")
-	}
 	command = os.Expand(command, os.Getenv)
 	result, err := colon.Parse(command)
 	if err != nil {
 		return err
 	}
 	command = strings.Join(result.Executable().One().Attr.Args, " ")
+	if command == "" {
+		return errors.New("invalid command")
+	}
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("cmd", "/c", command)
